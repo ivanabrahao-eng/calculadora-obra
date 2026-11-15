@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de Obra</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f2ee;--card:#fff;--ink:#1f2328;--mut:#6b6f76;--line:#e3e0da;--acc:#d9622b;--acc2:#fbe9df;--ok:#1f7a4d}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+header{padding:20px 16px 8px;max-width:760px;margin:auto}
+h1{margin:0;font-size:22px;letter-spacing:-.01em}
+header p{margin:4px 0 0;color:var(--mut);font-size:14px}
+nav{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px;max-width:760px;margin:auto;display:flex;gap:6px;overflow-x:auto}
+nav button{flex:0 0 auto;border:1px solid var(--line);background:var(--card);padding:9px 14px;border-radius:999px;font:500 14px Inter,sans-serif;color:var(--ink);cursor:pointer}
+nav button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+main{max-width:760px;margin:auto;padding:4px 16px 40px}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.card h2{font-size:16px;margin:0 0 12px}
+label{display:block;font-size:12px;color:var(--mut);margin-bottom:4px;font-weight:500}
+input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;font:15px Inter,sans-serif;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--acc);border-color:transparent}
+.g{display:grid;gap:10px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.row{border:1px dashed var(--line);border-radius:10px;padding:10px;margin-bottom:8px;position:relative}
+.row .x{position:absolute;top:6px;right:8px;border:0;background:none;color:var(--mut);font-size:18px;cursor:pointer}
+.btn{border:0;background:var(--acc2);color:var(--acc);font:600 14px Inter,sans-serif;padding:10px 14px;border-radius:9px;cursor:pointer}
+.btn.dark{background:var(--ink);color:#fff}
+.res{background:var(--ink);color:#fff;border-radius:14px;padding:16px}
+.res h2{color:#fff}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.k{background:rgba(255,255,255,.07);border-radius:10px;padding:10px}
+.k b{display:block;font-size:20px;font-weight:700}
+.k span{font-size:12px;color:#b9bcc2}
+.note{font-size:12px;color:var(--mut);margin-top:10px;line-height:1.45}
+.res .note{color:#b9bcc2}
+.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ok);color:#fff;padding:10px 16px;border-radius:9px;font-size:14px;opacity:0;transition:.2s;pointer-events:none}
+.toast.on{opacity:1}
+@media(max-width:520px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Calculadora de Obra</h1>
+  <p>Quantitativos rápidos: concreto, aço, alvenaria e piso.</p>
+</header>
+<nav id="tabs">
+  <button data-t="concreto" class="on">Concreto</button>
+  <button data-t="aco">Aço</button>
+  <button data-t="alvenaria">Alvenaria</button>
+  <button data-t="piso">Piso</button>
+</nav>
+<main>
+
+<!-- CONCRETO -->
+<section id="concreto" class="on">
+  <div class="card">
+    <h2>Elementos (medidas em metros)</h2>
+    <div id="cRows"></div>
+    <button class="btn" onclick="addC()">+ Adicionar elemento</button>
+  </div>
+  <div class="card">
+    <h2>Traço e perdas</h2>
+    <div class="g g2">
+      <div><label>Traço (cimento : areia : brita), em massa</label>
+        <select id="cTraco">
+          <option value="1,2,3,0.55">1 : 2 : 3, a/c 0,55 (~25 MPa)</option>
+          <option value="1,2.5,3.5,0.6" selected>1 : 2,5 : 3,5, a/c 0,60 (~20 MPa)</option>
+          <option value="1,3,4,0.65">1 : 3 : 4, a/c 0,65 (~15 MPa)</option>
+          <option value="1,1.5,2.5,0.5">1 : 1,5 : 2,5, a/c 0,50 (~30 MPa)</option>
+        </select></div>
+      <div><label>Perda (%)</label><input id="cPerda" type="number" value="5" min="0"></div>
+    </div>
+  </div>
+  <div class="res">
+    <h2>Resultado</h2>
+    <div class="kpis" id="cOut"></div>
+    <p class="note">Consumo de cimento: C = 1000 / (1/3,15 + a/2,65 + p/2,70 + a/c), sem considerar ar incorporado. Massas unitárias: areia 1,45 t/m³, brita 1,40 t/m³. Para concreto estrutural, use traço dosado em laboratório ou concreto usinado com fck especificado.</p>
+    <div class="actions"><button class="btn dark" style="background:#fff;color:var(--ink)" onclick="copy('c')">Copiar resumo</button></div>
+  </div>
+</section>
+
+<!-- AÇO -->
+<section id="aco">
+  <div class="card">
+    <h2>Barras</h2>
+    <div id="aRows"></div>
+    <button class="btn" onclick="addA()">+ Adicionar posição</button>
+  </div>
+  <div class="card">
+    <div class="g g2">
+      <div><label>Perda / transpasse (%)</label><input id="aPerda" type="number" value="10" min="0"></div>
+      <div><label>Comprimento da barra comercial (m)</label><input id="aBarra" type="number" value="12" min="1"></div>
+    </div>
+  </div>
+  <div class="res">
+    <h2>Resultado</h2>
+    <div class="kpis" id="aOut"></div>
+    <div id="aDet" class="note"></div>
+    <p class="note">Massa linear = 0,006165 × Ø² (kg/m, Ø em mm), equivalente a ρ = 7.850 kg/m³. O número de barras é uma estimativa sem plano de corte otimizado.</p>
+    <div class="actions"><button class="btn" style="background:#fff;color:var(--ink)" onclick="copy('a')">Copiar resumo</button></div>
+  </div>
+</section>
+
+<!-- ALVENARIA -->
+<section id="alvenaria">
+  <div class="card">
+    <h2>Parede</h2>
+    <div class="g g3">
+      <div><label>Comprimento total (m)</label><input id="wC" type="number" value="10" min="0" step="0.01"></div>
+      <div><label>Altura (m)</label><input id="wH" type="number" value="2.8" min="0" step="0.01"></div>
+      <div><label>Aberturas, área total (m²)</label><input id="wAb" type="number" value="3" min="0" step="0.01"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Bloco</h2>
+    <div class="g g2">
+      <div><label>Tipo</label>
+        <select id="wTipo">
+          <option value="9,19,19">Tijolo cerâmico 8 furos, 9×19×19</option>
+          <option value="9,19,29">Cerâmico 9×19×29</option>
+          <option value="14,19,29">Cerâmico 14×19×29</option>
+          <option value="14,19,39" selected>Bloco de concreto 14×19×39</option>
+          <option value="19,19,39">Bloco de concreto 19×19×39</option>
+          <option value="custom">Personalizado</option>
+        </select></div>
+      <div><label>Junta (cm)</label><input id="wJ" type="number" value="1" min="0" step="0.1"></div>
+    </div>
+    <div class="g g3" id="wCustom" style="display:none;margin-top:10px">
+      <div><label>Espessura (cm)</label><input id="wE" type="number" value="14"></div>
+      <div><label>Altura (cm)</label><input id="wBH" type="number" value="19"></div>
+      <div><label>Comprimento (cm)</label><input id="wBL" type="number" value="39"></div>
+    </div>
+    <div class="g g2" style="margin-top:10px">
+      <div><label>Perda de blocos (%)</label><input id="wPerda" type="number" value="5" min="0"></div>
+      <div><label>Traço da argamassa (cim:cal:areia, volume)</label>
+        <select id="wArg">
+          <option value="1,2,8">1 : 2 : 8</option>
+          <option value="1,1,6" selected>1 : 1 : 6</option>
+          <option value="1,0.5,4.5">1 : 0,5 : 4,5</option>
+        </select></div>
+    </div>
+  </div>
+  <div class="res">
+    <h2>Resultado</h2>
+    <div class="kpis" id="wOut"></div>
+    <p class="note">Blocos/m² = 1 / [(L + j)(H + j)]. Argamassa de assentamento = volume da parede − volume dos blocos, +15% de perda. Materiais da argamassa estimados pelo traço em volume (cimento 1,42 kg/L, saco de 50 kg; cal hidratada em sacos de 20 kg).</p>
+    <div class="actions"><button class="btn" style="background:#fff;color:var(--ink)" onclick="copy('w')">Copiar resumo</button></div>
+  </div>
+</section>
+
+<!-- PISO -->
+<section id="piso">
+  <div class="card">
+    <h2>Área e peça</h2>
+    <div class="g g2">
+      <div><label>Área do ambiente (m²)</label><input id="pA" type="number" value="20" min="0" step="0.01"></div>
+      <div><label>m² por caixa</label><input id="pCx" type="number" value="2.5" min="0.01" step="0.01"></div>
+      <div><label>Assentamento</label>
+        <select id="pPerda">
+          <option value="10">Reto (10%)</option>
+          <option value="15">Diagonal (15%)</option>
+          <option value="8">Porcelanato grande, reto (8%)</option>
+        </select></div>
+      <div><label>Rodapé, perímetro (m)</label><input id="pPer" type="number" value="18" min="0" step="0.01"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Contrapiso (opcional)</h2>
+    <div class="g g2">
+      <div><label>Espessura (cm)</label><input id="pEsp" type="number" value="4" min="0" step="0.5"></div>
+      <div><label>Argamassa colante (kg/m²)</label><input id="pAc" type="number" value="5" min="0" step="0.5"></div>
+    </div>
+  </div>
+  <div class="res">
+    <h2>Resultado</h2>
+    <div class="kpis" id="pOut"></div>
+    <p class="note">Contrapiso em traço 1:3 (cimento:areia, volume), com cerca de 430 kg de cimento por m³. Argamassa colante em sacos de 20 kg. Para porcelanato acima de 60 cm, considere dupla colagem (cerca de 8 kg/m²).</p>
+    <div class="actions"><button class="btn" style="background:#fff;color:var(--ink)" onclick="copy('p')">Copiar resumo</button></div>
+  </div>
+</section>
+
+</main>
+<div class="toast" id="toast">Copiado!</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const n=v=>{const x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:0};
+const f=(v,d=2)=>v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const summaries={};
+
+// tabs
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));
+  try{location.hash=b.dataset.t}catch(e){}
+});
+function openHash(){const h=location.hash.slice(1);const b=document.querySelector(`#tabs button[data-t="${h}"]`);if(b)b.click()}
+window.addEventListener('hashchange',openHash);
+
+function kpis(el,items){$(el).innerHTML=items.map(([v,l])=>`<div class="k"><b>${v}</b><span>${l}</span></div>`).join('')}
+
+// ---------- CONCRETO
+let cId=0;
+function addC(t='Laje',c=5,l=4,h=0.1,q=1){
+  const id=cId++;const d=document.createElement('div');d.className='row';d.id='c'+id;
+  d.innerHTML=`<button class="x" onclick="this.parentNode.remove();calcC()">×</button>
+  <div class="g g2" style="margin-bottom:8px"><div><label>Elemento</label><input value="${t}" data-k="t"></div><div><label>Quantidade</label><input type="number" value="${q}" data-k="q" min="0"></div></div>
+  <div class="g g3"><div><label>Comprimento</label><input type="number" step="0.01" value="${c}" data-k="c"></div><div><label>Largura</label><input type="number" step="0.01" value="${l}" data-k="l"></div><div><label>Altura/Espessura</label><input type="number" step="0.01" value="${h}" data-k="h"></div></div>`;
+  $('cRows').appendChild(d);d.querySelectorAll('input').forEach(i=>i.oninput=calcC);calcC();
+}
+function calcC(){
+  let vol=0;const lines=[];
+  $('cRows').querySelectorAll('.row').forEach(r=>{
+    const g=k=>r.querySelector(`[data-k="${k}"]`).value;
+    const v=n(g('c'))*n(g('l'))*n(g('h'))*n(g('q'));vol+=v;lines.push(`${g('t')}: ${f(v,3)} m³`)
+  });
+  const perda=n($('cPerda').value)/100;const vt=vol*(1+perda);
+  const [a,p,x]=$('cTraco').value.split(',').slice(1).map(Number);
+  const C=1000/(1/3.15+a/2.65+p/2.70+x); // kg/m3
+  const cim=C*vt, are=C*a*vt/1450, bri=C*p*vt/1400, agua=C*x*vt;
+  kpis('cOut',[[f(vt,2)+' m³','Volume com perda'],[Math.ceil(cim/50)+' sacos','Cimento (50 kg)'],[f(are,2)+' m³','Areia'],[f(bri,2)+' m³','Brita'],[f(agua,0)+' L','Água'],[f(C,0)+' kg/m³','Consumo de cimento']]);
+  summaries.c=`CONCRETO\n${lines.join('\n')}\nVolume líquido: ${f(vol,3)} m³ | com ${f(perda*100,0)}% de perda: ${f(vt,2)} m³\nCimento: ${Math.ceil(cim/50)} sacos de 50 kg (${f(cim,0)} kg)\nAreia: ${f(are,2)} m³ | Brita: ${f(bri,2)} m³ | Água: ${f(agua,0)} L`;
+}
+['cPerda','cTraco'].forEach(i=>$(i).oninput=calcC);
+
+// ---------- AÇO
+const DIAMS=[5,6.3,8,10,12.5,16,20,25,32];
+function addA(d=10,c=3,q=10){
+  const r=document.createElement('div');r.className='row';
+  r.innerHTML=`<button class="x" onclick="this.parentNode.remove();calcA()">×</button>
+  <div class="g g3"><div><label>Ø (mm)</label><select data-k="d">${DIAMS.map(x=>`<option ${x==d?'selected':''}>${x}</option>`).join('')}</select></div>
+  <div><label>Comprimento unitário (m)</label><input type="number" step="0.01" value="${c}" data-k="c"></div>
+  <div><label>Quantidade</label><input type="number" value="${q}" data-k="q"></div></div>`;
+  $('aRows').appendChild(r);r.querySelectorAll('input,select').forEach(i=>i.oninput=calcA);calcA();
+}
+function calcA(){
+  const perda=n($('aPerda').value)/100, L=n($('aBarra').value)||12;const by={};
+  $('aRows').querySelectorAll('.row').forEach(r=>{
+    const g=k=>r.querySelector(`[data-k="${k}"]`).value;const d=n(g('d'));
+    by[d]=(by[d]||0)+n(g('c'))*n(g('q'))*(1+perda);
+  });
+  let kg=0,bars=0;const det=[];
+  Object.keys(by).sort((a,b)=>a-b).forEach(d=>{const m=by[d];const k=m*0.006165*d*d;const b=Math.ceil(m/L);kg+=k;bars+=b;
+    det.push(`Ø${String(d).replace('.',',')}: ${f(m,1)} m · ${f(k,1)} kg · ${b} barras`)});
+  kpis('aOut',[[f(kg,1)+' kg','Peso total'],[bars+'','Barras de '+f(L,0)+' m']]);
+  $('aDet').innerHTML=det.join('<br>');
+  summaries.a=`AÇO (com ${f(perda*100,0)}% de perda)\n${det.join('\n')}\nTotal: ${f(kg,1)} kg | ${bars} barras de ${f(L,0)} m`;
+}
+['aPerda','aBarra'].forEach(i=>$(i).oninput=calcA);
+
+// ---------- ALVENARIA
+function calcW(){
+  const custom=$('wTipo').value==='custom';$('wCustom').style.display=custom?'grid':'none';
+  let [e,h,l]=custom?[n($('wE').value),n($('wBH').value),n($('wBL').value)]:$('wTipo').value.split(',').map(Number);
+  const j=n($('wJ').value);
+  const area=Math.max(0,n($('wC').value)*n($('wH').value)-n($('wAb').value));
+  const porM2=1/(((l+j)/100)*((h+j)/100));
+  const blocos=Math.ceil(area*porM2*(1+n($('wPerda').value)/100));
+  const volParede=area*e/100, volBlocos=area*porM2*(l/100)*(h/100)*(e/100);
+  const arg=Math.max(0,volParede-volBlocos)*1.15; // m3
+  const [tc,tk,ta]=$('wArg').value.split(',').map(Number);const tot=tc+tk+ta;
+  // fator de rendimento ~1.35 (volume seco solto -> argamassa)
+  const seco=arg*1.35;const cim=seco*tc/tot*1420, cal=seco*tk/tot*700, are=seco*ta/tot;
+  kpis('wOut',[[f(area,2)+' m²','Área líquida'],[blocos+'','Blocos (com perda)'],[f(porM2,1)+'/m²','Blocos por m²'],[f(arg,3)+' m³','Argamassa'],[Math.ceil(cim/50)+' sacos','Cimento (50 kg)'],[Math.ceil(cal/20)+' sacos','Cal (20 kg)'],[f(are,2)+' m³','Areia'],['','']].filter(x=>x[0]));
+  summaries.w=`ALVENARIA\nÁrea líquida: ${f(area,2)} m² | Bloco ${e}×${h}×${l} cm, junta ${f(j,1)} cm\nBlocos: ${blocos} (${f(porM2,1)}/m²)\nArgamassa: ${f(arg,3)} m³ → Cimento ${Math.ceil(cim/50)} sc, Cal ${Math.ceil(cal/20)} sc, Areia ${f(are,2)} m³`;
+}
+['wC','wH','wAb','wTipo','wJ','wE','wBH','wBL','wPerda','wArg'].forEach(i=>$(i).oninput=calcW);
+
+// ---------- PISO
+function calcP(){
+  const A=n($('pA').value), perda=n($('pPerda').value)/100, cx=n($('pCx').value)||1;
+  const m2=A*(1+perda), caixas=Math.ceil(m2/cx);
+  const rod=n($('pPer').value)*1.1;
+  const vcp=A*n($('pEsp').value)/100, cimCp=vcp*430, areCp=vcp*1.15;
+  const ac=Math.ceil(A*n($('pAc').value)/20);
+  kpis('pOut',[[caixas+' caixas',f(m2,2)+' m² com perda'],[f(rod,1)+' m','Rodapé (+10%)'],[ac+' sacos','Arg. colante (20 kg)'],[f(vcp,2)+' m³','Contrapiso'],[Math.ceil(cimCp/50)+' sacos','Cimento contrapiso'],[f(areCp,2)+' m³','Areia contrapiso']]);
+  summaries.p=`PISO\nÁrea: ${f(A,2)} m² | com ${f(perda*100,0)}%: ${f(m2,2)} m² → ${caixas} caixas de ${f(cx,2)} m²\nRodapé: ${f(rod,1)} m | Arg. colante: ${ac} sacos de 20 kg\nContrapiso: ${f(vcp,2)} m³ → Cimento ${Math.ceil(cimCp/50)} sc, Areia ${f(areCp,2)} m³`;
+}
+['pA','pCx','pPerda','pPer','pEsp','pAc'].forEach(i=>$(i).oninput=calcP);
+
+// copy
+async function copy(k){
+  const t=summaries[k]+'\n\nGerado em Calculadora de Obra';
+  try{await navigator.clipboard.writeText(t);toast('Resumo copiado!')}catch(e){toast('Não foi possível copiar')}
+}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600)}
+
+// init
+addC('Laje',5,4,0.10,1);addC('Viga',4,0.14,0.40,4);addC('Pilar',0.14,0.30,2.8,6);
+addA(10,4.2,16);addA(5,1.1,40);
+calcW();calcP();openHash();
+</script>
+</body>
+</html>
